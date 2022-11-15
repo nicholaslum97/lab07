@@ -1,24 +1,24 @@
 pipeline {
-  agent any
-  stages {
-
-
-    stage('Checkout') {
-      steps {
-        checkout scm
-      }
-    }
-
-    stage('OWASP DependencyCheck') {
-      steps {
-        dependencyCheck additionalArguments: '--format HTML --format XML', odcInstallation: 'default'
-      }
-    }
-  }
-
-  post {
-    success {
-      dependencyCheckPublisher pattern: 'dependency-check-report.xml'
-    }
-  }
+	agent {
+		docker {
+			image 'composer:latest'
+		}
+	}
+	stages {
+		stage('Build') {
+			steps {
+				sh 'composer install'
+			}
+		}
+		stage('Test') {
+			steps {
+                sh './vendor/bin/phpunit --log-junit logs/unitreport.xml -c tests/phpunit.xml tests'
+            }
+		}
+	}
+	post {
+		always {
+			junit testResults: 'logs/unitreport.xml'
+		}
+	}
 }
